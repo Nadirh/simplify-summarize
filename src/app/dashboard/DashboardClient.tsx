@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { UserButton } from "@clerk/nextjs";
 import { Customer, Page, ProcessedContent } from "@/lib/db/supabase";
+import ContentChat from "@/components/chat/ContentChat";
 
 interface PageWithContent extends Page {
   processed_content: ProcessedContent[];
@@ -21,6 +22,7 @@ export default function DashboardClient({ customer, initialPages }: DashboardCli
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [editedContent, setEditedContent] = useState<Record<string, string>>({});
   const [origin, setOrigin] = useState("https://your-domain.vercel.app");
+  const [isPagesCollapsed, setIsPagesCollapsed] = useState(false);
 
   useEffect(() => {
     setOrigin(window.location.origin);
@@ -202,70 +204,89 @@ export default function DashboardClient({ customer, initialPages }: DashboardCli
         </div>
 
         {/* Pages Section */}
-        <div className="grid gap-8 lg:grid-cols-2">
-          {/* Pages List */}
-          <div className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="flex gap-8">
+          {/* Pages List - Collapsible */}
+          <div className={`rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 transition-all duration-300 ${isPagesCollapsed ? "w-12 flex-shrink-0" : "w-1/2 flex-shrink-0"}`}>
             <div className="flex items-center justify-between border-b border-zinc-200 p-4 dark:border-zinc-800">
-              <h2 className="text-lg font-semibold text-zinc-900 dark:text-white">
-                Pages ({pages.length})
-              </h2>
-              {pages.some(p => p.status === "pending") && (
-                <button
-                  onClick={processAllPages}
-                  disabled={isLoading}
-                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-                >
-                  Process All Pending
-                </button>
-              )}
-            </div>
-            <div className="max-h-[600px] overflow-y-auto">
-              {pages.length === 0 ? (
-                <div className="p-8 text-center text-zinc-500">
-                  No pages yet. Crawl a website to get started.
-                </div>
-              ) : (
-                <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
-                  {pages.map((page) => (
-                    <li
-                      key={page.id}
-                      onClick={() => setSelectedPage(page)}
-                      className={`cursor-pointer p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800 ${selectedPage?.id === page.id ? "bg-zinc-100 dark:bg-zinc-800" : ""}`}
+              {!isPagesCollapsed && (
+                <>
+                  <h2 className="text-lg font-semibold text-zinc-900 dark:text-white">
+                    Pages ({pages.length})
+                  </h2>
+                  {pages.some(p => p.status === "pending") && (
+                    <button
+                      onClick={processAllPages}
+                      disabled={isLoading}
+                      className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
                     >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate font-medium text-zinc-900 dark:text-white">
-                            {page.title || "Untitled"}
-                          </p>
-                          <p className="truncate text-sm text-zinc-500">
-                            {page.url}
-                          </p>
-                        </div>
-                        <span className={`rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(page.status)}`}>
-                          {page.status}
-                        </span>
-                      </div>
-                      {page.processed_content?.length > 0 && (
-                        <div className="mt-2 flex gap-2">
-                          {page.processed_content.map((pc) => (
-                            <span
-                              key={pc.id}
-                              className={`rounded px-2 py-0.5 text-xs ${pc.approved ? "bg-green-100 text-green-700" : "bg-zinc-100 text-zinc-600"}`}
-                            >
-                              {pc.type} {pc.approved ? "✓" : ""}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </li>
-                  ))}
-                </ul>
+                      Process All Pending
+                    </button>
+                  )}
+                </>
               )}
+              <button
+                onClick={() => setIsPagesCollapsed(!isPagesCollapsed)}
+                className={`text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 ${isPagesCollapsed ? "mx-auto" : "ml-2"}`}
+                title={isPagesCollapsed ? "Expand pages" : "Collapse pages"}
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {isPagesCollapsed ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                  ) : (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                  )}
+                </svg>
+              </button>
             </div>
+            {!isPagesCollapsed && (
+              <div className="max-h-[600px] overflow-y-auto">
+                {pages.length === 0 ? (
+                  <div className="p-8 text-center text-zinc-500">
+                    No pages yet. Crawl a website to get started.
+                  </div>
+                ) : (
+                  <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
+                    {pages.map((page) => (
+                      <li
+                        key={page.id}
+                        onClick={() => setSelectedPage(page)}
+                        className={`cursor-pointer p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800 ${selectedPage?.id === page.id ? "bg-zinc-100 dark:bg-zinc-800" : ""}`}
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate font-medium text-zinc-900 dark:text-white">
+                              {page.title || "Untitled"}
+                            </p>
+                            <p className="truncate text-sm text-zinc-500">
+                              {page.url}
+                            </p>
+                          </div>
+                          <span className={`rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(page.status)}`}>
+                            {page.status}
+                          </span>
+                        </div>
+                        {page.processed_content?.length > 0 && (
+                          <div className="mt-2 flex gap-2">
+                            {page.processed_content.map((pc) => (
+                              <span
+                                key={pc.id}
+                                className={`rounded px-2 py-0.5 text-xs ${pc.approved ? "bg-green-100 text-green-700" : "bg-zinc-100 text-zinc-600"}`}
+                              >
+                                {pc.type} {pc.approved ? "✓" : ""}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Content Review */}
-          <div className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+          {/* Content Review - Expands when Pages is collapsed */}
+          <div className="flex-1 rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
             <div className="border-b border-zinc-200 p-4 dark:border-zinc-800">
               <h2 className="text-lg font-semibold text-zinc-900 dark:text-white">
                 Review Content
@@ -315,6 +336,13 @@ export default function DashboardClient({ customer, initialPages }: DashboardCli
                         {editedContent[pc.id] !== undefined && editedContent[pc.id] !== pc.content && (
                           <p className="mt-2 text-xs text-amber-600">Unsaved changes - click Approve or Reject to save</p>
                         )}
+                        <ContentChat
+                          contentId={pc.id}
+                          contentType={pc.type as "simplify" | "summarize"}
+                          currentContent={editedContent[pc.id] !== undefined ? editedContent[pc.id] : pc.content}
+                          originalContent={selectedPage.raw_content || ""}
+                          onApplyContent={(content) => setEditedContent(prev => ({ ...prev, [pc.id]: content }))}
+                        />
                       </div>
                     </div>
                   ))}

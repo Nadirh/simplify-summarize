@@ -188,8 +188,8 @@
     container.id = WIDGET_ID;
     container.innerHTML = `
       <div id="${WIDGET_ID}-buttons">
-        <button data-type="simplify">Simplify</button>
-        <button data-type="summarize">Summarize</button>
+        <button data-type="simplify">Simplify this page</button>
+        <button data-type="summarize">Summarize this page</button>
       </div>
       <div id="${WIDGET_ID}-panel" role="dialog" aria-labelledby="${WIDGET_ID}-title">
         <div id="${WIDGET_ID}-header">
