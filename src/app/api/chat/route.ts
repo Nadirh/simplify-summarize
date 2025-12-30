@@ -14,12 +14,7 @@ export async function POST(request: Request) {
   // Convert UIMessage format to model messages format
   const messages = await convertToModelMessages(uiMessages as UIMessage[]);
 
-  const systemPrompt = `You are an AI assistant helping a corporate user refine ${contentType === "simplify" ? "simplified" : "summarized"} content for their website.
-
-CONTEXT:
-- The user is reviewing AI-generated ${contentType === "simplify" ? "simplified" : "summarized"} content
-- They can ask you to modify, improve, or adjust the content
-- Your goal is to help them create the best possible ${contentType === "simplify" ? "simplified" : "summarized"} version
+  const systemPrompt = `You are an AI assistant helping refine ${contentType === "simplify" ? "simplified" : "summarized"} content.
 
 ORIGINAL PAGE CONTENT:
 ${originalContent}
@@ -27,15 +22,18 @@ ${originalContent}
 CURRENT ${contentType.toUpperCase()} VERSION:
 ${currentContent}
 
-INSTRUCTIONS:
-1. When the user asks for changes, provide a brief explanation of what you're changing and why
-2. When suggesting new content, wrap it in <suggested_content> tags like this:
-   <suggested_content>
-   Your suggested content here
-   </suggested_content>
-3. The user can apply your suggestion with one click, or continue iterating
-4. Keep responses concise and focused on the content improvement
-5. ${contentType === "simplify" ? "For simplified content: Use clear, accessible language suitable for all reading levels" : "For summarized content: Be concise while capturing the key points"}`;
+CRITICAL INSTRUCTIONS:
+- When the user asks for changes, respond ONLY with the revised content wrapped in <suggested_content> tags
+- Do NOT include any preamble, explanation, or commentary before the suggested content
+- Do NOT include any postamble or explanation after the suggested content
+- ONLY output the tags and the content inside them, nothing else
+
+Example of correct response format:
+<suggested_content>
+Your revised content here.
+</suggested_content>
+
+${contentType === "simplify" ? "For simplified content: Use clear, accessible language suitable for all reading levels." : "For summarized content: Be concise while capturing the key points."}`;
 
   const result = streamText({
     model: anthropic("claude-sonnet-4-20250514"),
