@@ -62,26 +62,76 @@ export default function DashboardClient({ customer, initialPages }: DashboardCli
     }
   };
 
+  const refreshPages = async () => {
+    const pagesRes = await fetch("/api/pages");
+    const pagesData = await pagesRes.json();
+    setPages(pagesData.pages || []);
+    return pagesData.pages || [];
+  };
+
   const processAllPages = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch("/api/process", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ all: true }),
-      });
+      // Use AbortController with 2 minute timeout (dev server times out at ~100s)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000);
 
-      const data = await res.json();
+      try {
+        const res = await fetch("/api/process", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ all: true }),
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
 
-      if (!res.ok) throw new Error(data.error);
+        const data = await res.json();
 
-      showMessage("success", `Processed ${data.processed} pages`);
+        if (!res.ok) throw new Error(data.error);
 
-      // Refresh pages from API
-      const pagesRes = await fetch("/api/pages");
-      const pagesData = await pagesRes.json();
-      setPages(pagesData.pages || []);
-      setSelectedPage(null);
+        showMessage("success", `Processed ${data.processed} pages`);
+        await refreshPages();
+        setSelectedPage(null);
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+
+        // Handle timeout or JSON parse errors - processing may still be running
+        const isTimeout = fetchError instanceof Error && fetchError.name === "AbortError";
+        const isJsonError = fetchError instanceof Error && fetchError.message.includes("JSON");
+
+        if (isTimeout || isJsonError) {
+          showMessage("success", "Processing in progress... checking status");
+
+          // Poll for completion (check every 5 seconds, up to 3 minutes)
+          let attempts = 0;
+          const maxAttempts = 36;
+
+          const pollStatus = async () => {
+            attempts++;
+            const pages = await refreshPages();
+            // Check for pages still being processed (pending or processing status)
+            const inProgressCount = pages.filter((p: Page) =>
+              p.status === "pending" || p.status === "processing"
+            ).length;
+
+            if (inProgressCount === 0) {
+              showMessage("success", "All pages processed successfully");
+              setSelectedPage(null);
+              setIsLoading(false);
+            } else if (attempts < maxAttempts) {
+              setTimeout(pollStatus, 5000);
+            } else {
+              showMessage("error", `${inProgressCount} pages still processing. Click again to continue.`);
+              setIsLoading(false);
+            }
+          };
+
+          setTimeout(pollStatus, 5000);
+          return; // Don't set isLoading false yet - polling will handle it
+        } else {
+          throw fetchError;
+        }
+      }
     } catch (error) {
       showMessage("error", error instanceof Error ? error.message : "Processing failed");
     } finally {

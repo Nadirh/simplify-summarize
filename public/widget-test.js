@@ -71,9 +71,9 @@
     #${WIDGET_ID}-panel {
       position: fixed;
       bottom: 24px;
-      right: 140px;
-      width: 400px;
-      max-width: calc(100vw - 180px);
+      right: 180px;
+      width: 700px;
+      max-width: calc(100vw - 220px);
       max-height: calc(100vh - 48px);
       background: var(--ss-bg);
       border-radius: 16px;
@@ -117,11 +117,13 @@
     }
 
     #${WIDGET_ID}-content {
-      padding: 20px;
+      padding: 24px;
       overflow-y: auto;
       flex: 1;
       color: var(--ss-text);
-      max-height: 400px;
+      max-height: 700px;
+      font-size: 17px;
+      line-height: 1.7;
     }
 
     #${WIDGET_ID}-content.loading {
