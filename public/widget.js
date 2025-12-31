@@ -274,12 +274,12 @@
     // Open panel
     panel.classList.add('open');
 
-    // Check cache
-    const cacheKey = `${type}:${currentUrl}`;
-    if (cache[cacheKey]) {
-      contentEl.innerHTML = formatContent(cache[cacheKey]);
-      return;
-    }
+    // Cache disabled for now to ensure fresh content during QA
+    // const cacheKey = `${type}:${currentUrl}`;
+    // if (cache[cacheKey]) {
+    //   contentEl.innerHTML = formatContent(cache[cacheKey]);
+    //   return;
+    // }
 
     // Show loading
     contentEl.className = 'loading';
@@ -292,6 +292,7 @@
           headers: {
             'X-API-Key': API_KEY,
           },
+          cache: 'no-store',
         }
       );
 
@@ -301,7 +302,7 @@
       }
 
       const data = await response.json();
-      cache[cacheKey] = data.content;
+      // cache[cacheKey] = data.content;
 
       contentEl.className = '';
       contentEl.innerHTML = formatContent(data.content);
