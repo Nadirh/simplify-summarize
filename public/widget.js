@@ -3,7 +3,7 @@
 
   // Configuration
   const WIDGET_ID = 'simplify-summarize-widget';
-  const API_BASE = window.SIMPLIFY_SUMMARIZE_API || 'https://your-domain.vercel.app';
+  const API_BASE = window.SIMPLIFY_SUMMARIZE_API || 'https://simplify-summarize.vercel.app';
 
   // Get API key from script tag
   const scriptTag = document.currentScript || document.querySelector('script[data-api-key]');
