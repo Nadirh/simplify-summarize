@@ -25,7 +25,14 @@ Guidelines:
 - Maintain the essential meaning and key information
 - Keep the same general structure and flow
 
-Return ONLY the simplified content, no explanations or preamble.`;
+Format requirements:
+- Output as HTML with proper paragraph tags (<p>...</p>)
+- Use <strong> for important terms or headings within text
+- Use <br> for line breaks within a paragraph if needed
+- Group related sentences into paragraphs
+- Do NOT use headings (h1, h2, etc.), lists, or other HTML elements
+
+Return ONLY the HTML-formatted simplified content, no explanations or preamble.`;
 
 const SUMMARIZE_PROMPT = `You are an expert at summarizing content clearly and concisely.
 Your task is to create a summary of the following webpage content.
@@ -38,7 +45,14 @@ Guidelines:
 - Include any important details, numbers, or facts
 - Do not add any information that wasn't in the original
 
-Return ONLY the summary, no explanations or preamble.`;
+Format requirements:
+- Output as HTML with proper paragraph tags (<p>...</p>)
+- Use <strong> for important terms or headings within text
+- Use <br> for line breaks within a paragraph if needed
+- Group related sentences into paragraphs
+- Do NOT use headings (h1, h2, etc.), lists, or other HTML elements
+
+Return ONLY the HTML-formatted summary, no explanations or preamble.`;
 
 /**
  * Process content with Anthropic (simplify or summarize)
