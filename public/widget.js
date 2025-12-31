@@ -145,7 +145,7 @@
     }
 
     #${WIDGET_ID}-content p {
-      margin-bottom: 1em;
+      margin-bottom: 1.5em;
     }
 
     #${WIDGET_ID}-content.loading {

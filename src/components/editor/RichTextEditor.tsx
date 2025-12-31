@@ -221,7 +221,7 @@ export default function RichTextEditor({
     editorProps: {
       attributes: {
         class:
-          "prose prose-sm dark:prose-invert max-w-none p-3 min-h-[200px] focus:outline-none",
+          "prose prose-sm dark:prose-invert max-w-none p-3 min-h-[200px] focus:outline-none [&>p]:mb-4",
       },
     },
   });
