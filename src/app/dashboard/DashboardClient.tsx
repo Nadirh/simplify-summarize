@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { UserButton } from "@clerk/nextjs";
 import { Customer, Page, ProcessedContent } from "@/lib/db/supabase";
 import ContentChat from "@/components/chat/ContentChat";
+import RichTextEditor from "@/components/editor/RichTextEditor";
 
 interface PageWithContent extends Page {
   processed_content: ProcessedContent[];
@@ -385,10 +386,10 @@ export default function DashboardClient({ customer, initialPages }: DashboardCli
                           originalContent={selectedPage.raw_content || ""}
                           onApplyContent={(content) => setEditedContent(prev => ({ ...prev, [pc.id]: content }))}
                         >
-                          <textarea
-                            value={editedContent[pc.id] !== undefined ? editedContent[pc.id] : pc.content}
-                            onChange={(e) => setEditedContent(prev => ({ ...prev, [pc.id]: e.target.value }))}
-                            className="min-h-[200px] w-full resize-y rounded border border-zinc-200 bg-white p-3 text-sm text-zinc-700 focus:border-blue-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                          <RichTextEditor
+                            content={editedContent[pc.id] !== undefined ? editedContent[pc.id] : pc.content}
+                            onChange={(html) => setEditedContent(prev => ({ ...prev, [pc.id]: html }))}
+                            className="min-h-[200px]"
                           />
                           {editedContent[pc.id] !== undefined && editedContent[pc.id] !== pc.content && (
                             <p className="mt-2 text-xs text-amber-600">Unsaved changes - click Approve or Reject to save</p>

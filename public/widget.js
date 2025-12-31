@@ -126,6 +126,28 @@
       line-height: 1.7;
     }
 
+    #${WIDGET_ID}-content strong {
+      font-weight: 600;
+    }
+
+    #${WIDGET_ID}-content em {
+      font-style: italic;
+    }
+
+    #${WIDGET_ID}-content u {
+      text-decoration: underline;
+    }
+
+    #${WIDGET_ID}-content mark {
+      background-color: #fef08a;
+      padding: 0 2px;
+      border-radius: 2px;
+    }
+
+    #${WIDGET_ID}-content p {
+      margin-bottom: 1em;
+    }
+
     #${WIDGET_ID}-content.loading {
       display: flex;
       align-items: center;
@@ -289,10 +311,97 @@
     }
   }
 
+  // Allowed HTML tags for rich text content
+  const ALLOWED_TAGS = ['p', 'strong', 'em', 'u', 'mark', 'span', 'br'];
+  const ALLOWED_ATTRS = ['style', 'class'];
+  const ALLOWED_STYLE_PROPS = ['color', 'font-size', 'font-family', 'background-color'];
+
+  function sanitizeHtml(html) {
+    // Create a temporary container
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+
+    // Recursively sanitize nodes
+    function sanitizeNode(node) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        return node.textContent;
+      }
+
+      if (node.nodeType !== Node.ELEMENT_NODE) {
+        return '';
+      }
+
+      const tagName = node.tagName.toLowerCase();
+
+      // Remove disallowed tags but keep their text content
+      if (!ALLOWED_TAGS.includes(tagName)) {
+        let text = '';
+        node.childNodes.forEach(child => {
+          text += sanitizeNode(child);
+        });
+        return text;
+      }
+
+      // Sanitize attributes
+      let attrs = '';
+      for (const attr of Array.from(node.attributes)) {
+        if (ALLOWED_ATTRS.includes(attr.name.toLowerCase())) {
+          if (attr.name.toLowerCase() === 'style') {
+            // Filter style properties
+            const sanitizedStyle = sanitizeStyle(attr.value);
+            if (sanitizedStyle) {
+              attrs += ` style="${sanitizedStyle}"`;
+            }
+          } else {
+            attrs += ` ${attr.name}="${escapeHtml(attr.value)}"`;
+          }
+        }
+      }
+
+      // Process children
+      let innerHTML = '';
+      node.childNodes.forEach(child => {
+        innerHTML += sanitizeNode(child);
+      });
+
+      // Self-closing tags
+      if (tagName === 'br') {
+        return '<br>';
+      }
+
+      return `<${tagName}${attrs}>${innerHTML}</${tagName}>`;
+    }
+
+    function sanitizeStyle(style) {
+      const props = style.split(';').filter(p => p.trim());
+      const sanitized = props.filter(prop => {
+        const [name] = prop.split(':').map(s => s.trim());
+        return ALLOWED_STYLE_PROPS.includes(name.toLowerCase());
+      });
+      return sanitized.join('; ');
+    }
+
+    let result = '';
+    temp.childNodes.forEach(child => {
+      result += sanitizeNode(child);
+    });
+
+    return result;
+  }
+
+  function isHtmlContent(content) {
+    return /<[a-z][\s\S]*>/i.test(content);
+  }
+
   function formatContent(content) {
-    // Convert line breaks to paragraphs
+    // If content contains HTML tags, sanitize and return
+    if (isHtmlContent(content)) {
+      return sanitizeHtml(content);
+    }
+
+    // Legacy plain text handling (backward compatibility)
     const paragraphs = content.split(/\n\n+/).filter(p => p.trim());
-    return paragraphs.map(p => `<p style="margin-bottom: 1em;">${escapeHtml(p)}</p>`).join('');
+    return paragraphs.map(p => `<p>${escapeHtml(p)}</p>`).join('');
   }
 
   function escapeHtml(text) {
