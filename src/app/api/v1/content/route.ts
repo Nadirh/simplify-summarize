@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
       {
         headers: {
           ...corsHeaders(),
-          "Cache-Control": "public, max-age=3600, s-maxage=3600",
+          "Cache-Control": "public, max-age=60, s-maxage=60",
         },
       }
     );
