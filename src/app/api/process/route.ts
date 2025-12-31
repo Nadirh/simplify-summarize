@@ -4,8 +4,8 @@ import { getOrCreateCustomer } from "@/lib/db/customers";
 import { processPage, processAllPendingPages } from "@/lib/services/processor";
 
 // Increase timeout for processing multiple pages
-// Note: Vercel limits by plan - Hobby: 60s, Pro: 300s, Enterprise: 900s
-export const maxDuration = 3600;
+// Vercel Pro plan max is 800 seconds (~13 minutes)
+export const maxDuration = 800;
 
 export async function POST(request: NextRequest) {
   try {
