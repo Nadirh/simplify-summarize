@@ -7,6 +7,49 @@ interface ChatMessageProps {
   onApplyContent?: (content: string) => void;
 }
 
+// Simple HTML sanitizer for displaying AI-generated content
+const ALLOWED_TAGS = ["p", "strong", "em", "u", "mark", "span", "br"];
+
+function sanitizeHtml(html: string): string {
+  const temp = document.createElement("div");
+  temp.innerHTML = html;
+
+  function sanitizeNode(node: Node): string {
+    if (node.nodeType === Node.TEXT_NODE) {
+      return node.textContent || "";
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) {
+      return "";
+    }
+    const el = node as Element;
+    const tagName = el.tagName.toLowerCase();
+
+    if (!ALLOWED_TAGS.includes(tagName)) {
+      let text = "";
+      el.childNodes.forEach((child) => {
+        text += sanitizeNode(child);
+      });
+      return text;
+    }
+
+    let innerHTML = "";
+    el.childNodes.forEach((child) => {
+      innerHTML += sanitizeNode(child);
+    });
+
+    if (tagName === "br") {
+      return "<br>";
+    }
+    return `<${tagName}>${innerHTML}</${tagName}>`;
+  }
+
+  let result = "";
+  temp.childNodes.forEach((child) => {
+    result += sanitizeNode(child);
+  });
+  return result;
+}
+
 export default function ChatMessage({ message, onApplyContent }: ChatMessageProps) {
   const isUser = message.role === "user";
 
@@ -61,9 +104,10 @@ export default function ChatMessage({ message, onApplyContent }: ChatMessageProp
               <p className="whitespace-pre-wrap">{part.content}</p>
             ) : (
               <div className="my-2 rounded border border-green-300 bg-green-50 p-2 dark:border-green-700 dark:bg-green-900/30">
-                <p className="mb-2 whitespace-pre-wrap text-zinc-700 dark:text-zinc-300">
-                  {part.content}
-                </p>
+                <div
+                  className="mb-2 text-zinc-700 dark:text-zinc-300 [&>p]:mb-2 [&>p:last-child]:mb-0"
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(part.content) }}
+                />
                 {onApplyContent && (
                   <button
                     onClick={() => onApplyContent(part.content)}

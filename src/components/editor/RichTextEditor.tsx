@@ -215,6 +215,7 @@ export default function RichTextEditor({
       FontFamily,
     ],
     content,
+    immediatelyRender: false,
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
     },

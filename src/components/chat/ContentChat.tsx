@@ -27,6 +27,7 @@ export default function ContentChat({
   const [isContentCollapsed, setIsContentCollapsed] = useState(false);
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   // Create transport with body data
   const transport = useMemo(
@@ -49,9 +50,12 @@ export default function ContentChat({
 
   const isLoading = status === "streaming" || status === "submitted";
 
-  // Auto-scroll to bottom when new messages arrive
+  // Auto-scroll within chat container when new messages arrive (without scrolling the page)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesContainerRef.current && messagesEndRef.current) {
+      const container = messagesContainerRef.current;
+      container.scrollTop = container.scrollHeight;
+    }
   }, [messages]);
 
   const handleSubmit = async (e: FormEvent) => {
@@ -101,8 +105,18 @@ export default function ContentChat({
         </button>
       </div>
 
+      {/* Input - at top */}
+      <div className="border-b border-zinc-200 p-3 dark:border-zinc-700">
+        <ChatInput
+          value={input}
+          onChange={setInput}
+          onSubmit={handleSubmit}
+          isLoading={isLoading}
+        />
+      </div>
+
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-3">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-3">
         {messages.length === 0 ? (
           <p className="text-center text-sm text-zinc-500">
             Ask AI to modify the content.<br />
@@ -122,15 +136,6 @@ export default function ContentChat({
         )}
       </div>
 
-      {/* Input */}
-      <div className="border-t border-zinc-200 p-3 dark:border-zinc-700">
-        <ChatInput
-          value={input}
-          onChange={setInput}
-          onSubmit={handleSubmit}
-          isLoading={isLoading}
-        />
-      </div>
     </div>
   );
 
@@ -140,11 +145,11 @@ export default function ContentChat({
       {isOpen ? (
         <div className="flex gap-4">
           {/* Left: Content textarea - collapsible */}
-          <div className={`transition-all duration-300 ${isContentCollapsed ? "w-0 overflow-hidden opacity-0" : "flex-1 min-w-0"}`}>
+          <div className={`transition-all duration-300 ${isContentCollapsed ? "w-0 overflow-hidden opacity-0" : "w-1/2 min-w-0"}`}>
             {children}
           </div>
           {/* Right: Chat panel - expands when content is collapsed */}
-          <div className={`flex-shrink-0 transition-all duration-300 ${isContentCollapsed ? "flex-1" : "w-80"}`}>
+          <div className={`transition-all duration-300 ${isContentCollapsed ? "flex-1" : "w-1/2"}`}>
             {chatPanel}
           </div>
         </div>
