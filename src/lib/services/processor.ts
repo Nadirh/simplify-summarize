@@ -1,6 +1,7 @@
 import { generateText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { supabaseAdmin } from "../db/supabase";
+import { sendWebhook } from "./webhook";
 
 export type ProcessType = "simplify" | "summarize";
 
@@ -8,6 +9,10 @@ interface ProcessResult {
   success: boolean;
   content?: string;
   error?: string;
+  usage?: {
+    input_tokens: number;
+    output_tokens: number;
+  };
 }
 
 const SIMPLIFY_PROMPT = `You are an expert at making complex content accessible to everyone.
@@ -61,13 +66,22 @@ async function processWithAI(content: string, type: ProcessType): Promise<Proces
   const prompt = type === "simplify" ? SIMPLIFY_PROMPT : SUMMARIZE_PROMPT;
 
   try {
-    const { text } = await generateText({
+    const { text, usage } = await generateText({
       model: anthropic("claude-sonnet-4-20250514"),
       system: prompt,
       prompt: `Here is the webpage content to ${type}:\n\n${content}`,
     });
 
-    return { success: true, content: text };
+    return {
+      success: true,
+      content: text,
+      usage: usage
+        ? {
+            input_tokens: usage.promptTokens,
+            output_tokens: usage.completionTokens,
+          }
+        : undefined,
+    };
   } catch (error) {
     console.error(`Error processing content (${type}):`, error);
     return { success: false, error: String(error) };
@@ -134,6 +148,20 @@ export async function processPage(pageId: string): Promise<{
     );
     if (error) console.error(`Failed to save simplified content:`, error);
     simplified = !error;
+
+    // Send webhook for simplified content
+    if (simplified) {
+      await sendWebhook({
+        action: "content_processed",
+        page_url: page.url,
+        page_title: page.title || undefined,
+        content_type: "simplify",
+        content: simplifyResult.content,
+        customer_id: page.customer_id,
+        timestamp: new Date().toISOString(),
+        usage: simplifyResult.usage,
+      });
+    }
   }
 
   // Generate summarized version
@@ -153,6 +181,20 @@ export async function processPage(pageId: string): Promise<{
     );
     if (error) console.error(`Failed to save summarized content:`, error);
     summarized = !error;
+
+    // Send webhook for summarized content
+    if (summarized) {
+      await sendWebhook({
+        action: "content_processed",
+        page_url: page.url,
+        page_title: page.title || undefined,
+        content_type: "summarize",
+        content: summarizeResult.content,
+        customer_id: page.customer_id,
+        timestamp: new Date().toISOString(),
+        usage: summarizeResult.usage,
+      });
+    }
   }
 
   // Update page status
