@@ -77,8 +77,8 @@ async function processWithAI(content: string, type: ProcessType): Promise<Proces
       content: text,
       usage: usage
         ? {
-            input_tokens: usage.promptTokens,
-            output_tokens: usage.completionTokens,
+            input_tokens: usage.inputTokens ?? 0,
+            output_tokens: usage.outputTokens ?? 0,
           }
         : undefined,
     };
