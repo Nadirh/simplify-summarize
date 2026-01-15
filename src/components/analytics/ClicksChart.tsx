@@ -32,10 +32,10 @@ export default function ClicksChart({ data }: ClicksChartProps) {
   }
 
   const maxClicks = Math.max(...data.map((d) => d.total_clicks), 1);
+  const chartHeight = 200; // pixels
 
   const formatDate = (period: string) => {
     const date = new Date(period);
-    // Check if hourly or daily based on whether time varies
     if (data.length > 1) {
       const d1 = new Date(data[0].period);
       const d2 = new Date(data[1].period);
@@ -47,23 +47,66 @@ export default function ClicksChart({ data }: ClicksChartProps) {
     return date.toLocaleDateString([], { month: "short", day: "numeric" });
   };
 
+  // For single data point, show a summary card instead of a bar chart
+  if (data.length === 1) {
+    const point = data[0];
+    return (
+      <div className="space-y-4">
+        <div className="rounded-lg bg-zinc-100 p-6 dark:bg-zinc-800">
+          <p className="mb-2 text-sm text-zinc-500">{formatDate(point.period)}</p>
+          <div className="flex items-end gap-4">
+            <div className="flex items-center gap-2">
+              <div className="h-16 w-8 rounded bg-blue-500" />
+              <div>
+                <p className="text-2xl font-bold text-blue-600">{point.simplify_clicks}</p>
+                <p className="text-sm text-zinc-500">Simplify</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-16 w-8 rounded bg-green-500" />
+              <div>
+                <p className="text-2xl font-bold text-green-600">{point.summarize_clicks}</p>
+                <p className="text-sm text-zinc-500">Summarize</p>
+              </div>
+            </div>
+            {point.errors > 0 && (
+              <div className="ml-4 text-red-500">
+                <p className="text-lg font-bold">{point.errors}</p>
+                <p className="text-sm">Errors</p>
+              </div>
+            )}
+          </div>
+          <p className="mt-4 text-sm text-zinc-500">
+            Total: <span className="font-medium text-zinc-700 dark:text-zinc-300">{point.total_clicks} clicks</span>
+          </p>
+        </div>
+        <p className="text-center text-sm text-zinc-400">
+          Chart will show trends when more days have data
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="h-64">
-      {/* Chart container */}
-      <div className="flex h-full items-end gap-1">
+    <div>
+      {/* Chart */}
+      <div className="flex items-end gap-1" style={{ height: chartHeight }}>
         {data.map((point, i) => {
-          const height = (point.total_clicks / maxClicks) * 100;
-          const simplifyHeight = (point.simplify_clicks / maxClicks) * 100;
-          const summarizeHeight = (point.summarize_clicks / maxClicks) * 100;
+          const barHeight = (point.total_clicks / maxClicks) * chartHeight;
+          const simplifyHeight = point.total_clicks > 0
+            ? (point.simplify_clicks / point.total_clicks) * barHeight
+            : 0;
+          const summarizeHeight = point.total_clicks > 0
+            ? (point.summarize_clicks / point.total_clicks) * barHeight
+            : 0;
 
           return (
             <div
               key={i}
               className="group relative flex flex-1 flex-col items-center justify-end"
-              style={{ minWidth: data.length === 1 ? '60px' : undefined, maxWidth: data.length === 1 ? '120px' : undefined }}
             >
               {/* Tooltip */}
-              <div className="pointer-events-none absolute bottom-full mb-2 hidden rounded bg-zinc-800 px-2 py-1 text-xs text-white group-hover:block">
+              <div className="pointer-events-none absolute bottom-full mb-2 z-10 hidden rounded bg-zinc-800 px-2 py-1 text-xs text-white group-hover:block">
                 <p className="font-medium">{formatDate(point.period)}</p>
                 <p>Total: {point.total_clicks}</p>
                 <p className="text-blue-300">Simplify: {point.simplify_clicks}</p>
@@ -71,23 +114,20 @@ export default function ClicksChart({ data }: ClicksChartProps) {
                 {point.errors > 0 && <p className="text-red-300">Errors: {point.errors}</p>}
               </div>
 
-              {/* Stacked bar */}
-              <div
-                className="flex w-full flex-col justify-end rounded-t"
-                style={{ height: `${height}%`, minHeight: point.total_clicks > 0 ? '8px' : '0' }}
-              >
+              {/* Stacked bar using pixel heights */}
+              <div className="flex w-full flex-col">
                 {/* Summarize portion (top) */}
-                {point.summarize_clicks > 0 && (
+                {summarizeHeight > 0 && (
                   <div
                     className="w-full rounded-t bg-green-500"
-                    style={{ height: `${(point.summarize_clicks / point.total_clicks) * 100}%` }}
+                    style={{ height: summarizeHeight }}
                   />
                 )}
                 {/* Simplify portion (bottom) */}
-                {point.simplify_clicks > 0 && (
+                {simplifyHeight > 0 && (
                   <div
-                    className={`w-full bg-blue-500 ${point.summarize_clicks === 0 ? 'rounded-t' : ''}`}
-                    style={{ height: `${(point.simplify_clicks / point.total_clicks) * 100}%` }}
+                    className={`w-full bg-blue-500 ${summarizeHeight === 0 ? "rounded-t" : ""}`}
+                    style={{ height: simplifyHeight }}
                   />
                 )}
               </div>
