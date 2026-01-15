@@ -91,3 +91,40 @@ CREATE POLICY "Service role full access on processed_content"
   ON processed_content FOR ALL
   USING (true)
   WITH CHECK (true);
+
+-- =============================================
+-- Analytics Events table (added for reporting)
+-- =============================================
+CREATE TABLE analytics_events (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+  page_id UUID REFERENCES pages(id) ON DELETE SET NULL,
+  event_type VARCHAR(50) NOT NULL,
+  content_type VARCHAR(20),
+  country VARCHAR(2),
+  region VARCHAR(100),
+  city VARCHAR(100),
+  device_type VARCHAR(20),
+  browser VARCHAR(50),
+  os VARCHAR(50),
+  page_url TEXT NOT NULL,
+  error_message TEXT,
+  error_code VARCHAR(20),
+  duration_seconds DECIMAL(10,2),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Indexes for analytics queries
+CREATE INDEX idx_analytics_customer_id ON analytics_events(customer_id);
+CREATE INDEX idx_analytics_created_at ON analytics_events(created_at);
+CREATE INDEX idx_analytics_event_type ON analytics_events(event_type);
+CREATE INDEX idx_analytics_customer_date ON analytics_events(customer_id, created_at);
+CREATE INDEX idx_analytics_duration ON analytics_events(customer_id, event_type, duration_seconds);
+
+-- RLS for analytics_events
+ALTER TABLE analytics_events ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Service role full access on analytics_events"
+  ON analytics_events FOR ALL
+  USING (true)
+  WITH CHECK (true);

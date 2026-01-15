@@ -199,6 +199,79 @@
   // State
   let activeType = null;
   let cache = {};
+  let panelOpenTime = null;
+  let maxScrollDepth = 0;
+  let keyboardNavigationDetected = false;
+
+  // Generate or retrieve visitor ID (persisted in localStorage)
+  function getVisitorId() {
+    const key = 'ss_visitor_id';
+    try {
+      let id = localStorage.getItem(key);
+      const isReturn = !!id;
+      if (!id) {
+        id = 'v_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+        localStorage.setItem(key, id);
+      }
+      return { id, isReturn };
+    } catch (e) {
+      // localStorage not available (private browsing, etc.)
+      return { id: 'v_anonymous', isReturn: false };
+    }
+  }
+
+  // Generate session ID (new per page load)
+  const sessionId = 's_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+  const visitorData = getVisitorId();
+
+  // Track which features used in session
+  let featuresUsedInSession = new Set();
+
+  // Detect potential screen reader or accessibility tool usage
+  function detectScreenReader() {
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const hasForcedColors = window.matchMedia('(forced-colors: active)').matches;
+    return prefersReducedMotion || hasForcedColors || keyboardNavigationDetected;
+  }
+
+  // Track keyboard navigation (tab key usage)
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Tab') {
+      keyboardNavigationDetected = true;
+    }
+  }, { once: true });
+
+  // Setup scroll depth tracking for content element
+  function setupScrollTracking(contentEl) {
+    contentEl.addEventListener('scroll', function onScroll() {
+      const scrollHeight = contentEl.scrollHeight - contentEl.clientHeight;
+      if (scrollHeight > 0) {
+        const depth = Math.round((contentEl.scrollTop / scrollHeight) * 100);
+        maxScrollDepth = Math.max(maxScrollDepth, depth);
+      }
+    });
+  }
+
+  // Analytics tracking - fire and forget, never blocks UI
+  function trackEvent(eventData) {
+    fetch(`${API_BASE}/api/v1/analytics`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': API_KEY,
+      },
+      body: JSON.stringify({
+        ...eventData,
+        page_url: window.location.href.split('#')[0].replace(/\/$/, ''),
+        session_id: sessionId,
+        visitor_id: visitorData.id,
+        is_return_visitor: visitorData.isReturn,
+        screen_reader_detected: detectScreenReader(),
+      }),
+    }).catch(() => {
+      // Silently ignore analytics failures - never impact user experience
+    });
+  }
 
   // Create widget HTML
   function createWidget() {
@@ -239,6 +312,13 @@
           return;
         }
 
+        // Track the click event and features used in session
+        featuresUsedInSession.add(type);
+        trackEvent({
+          event_type: 'click',
+          content_type: type,
+        });
+
         loadContent(type);
 
         // Update active state
@@ -261,7 +341,20 @@
   }
 
   function closePanel() {
+    // Track panel close with duration and scroll depth if panel was open
+    if (panelOpenTime && activeType) {
+      const durationSeconds = (Date.now() - panelOpenTime) / 1000;
+      trackEvent({
+        event_type: 'panel_close',
+        content_type: activeType,
+        duration_seconds: Math.round(durationSeconds * 100) / 100, // 2 decimal places
+        scroll_depth: maxScrollDepth,
+      });
+    }
+
+    panelOpenTime = null;
     activeType = null;
+    maxScrollDepth = 0; // Reset for next panel open
     document.getElementById(`${WIDGET_ID}-panel`).classList.remove('open');
     document.querySelectorAll(`#${WIDGET_ID}-buttons button`).forEach(b => b.classList.remove('active'));
   }
@@ -271,8 +364,9 @@
     const contentEl = document.getElementById(`${WIDGET_ID}-content`);
     const currentUrl = window.location.href.split('#')[0].replace(/\/$/, '');
 
-    // Open panel
+    // Open panel and capture open time for duration tracking
     panel.classList.add('open');
+    panelOpenTime = Date.now();
 
     // Cache disabled for now to ensure fresh content during QA
     // const cacheKey = `${type}:${currentUrl}`;
@@ -297,8 +391,10 @@
       );
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to load content');
+        const errorData = await response.json();
+        const err = new Error(errorData.error || 'Failed to load content');
+        err.status = response.status;
+        throw err;
       }
 
       const data = await response.json();
@@ -306,7 +402,19 @@
 
       contentEl.className = '';
       contentEl.innerHTML = formatContent(data.content);
+
+      // Setup scroll tracking for this content
+      maxScrollDepth = 0; // Reset when new content loads
+      setupScrollTracking(contentEl);
     } catch (error) {
+      // Track the error event
+      trackEvent({
+        event_type: 'error',
+        content_type: type,
+        error_message: error.message,
+        error_code: String(error.status || 'unknown'),
+      });
+
       contentEl.className = '';
       contentEl.innerHTML = `<div id="${WIDGET_ID}-error">${error.message}</div>`;
     }

@@ -213,6 +213,12 @@ export default function DashboardClient({ customer, initialPages }: DashboardCli
             Dashboard
           </h1>
           <div className="flex items-center gap-4">
+            <a
+              href="/dashboard/analytics"
+              className="rounded-lg bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50"
+            >
+              View Analytics
+            </a>
             <span className="text-sm text-zinc-500">
               API Key: <code className="rounded bg-zinc-100 px-2 py-1 text-xs dark:bg-zinc-800">{customer.api_key}</code>
             </span>
