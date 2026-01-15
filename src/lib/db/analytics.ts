@@ -121,20 +121,29 @@ export async function getTimelineData(
     return [];
   }
 
-  // Determine granularity based on date range
+  if (!data || data.length === 0) {
+    return [];
+  }
+
+  // Check how many unique days have data
+  const uniqueDays = new Set(
+    data.map((e) => new Date(e.created_at).toISOString().slice(0, 10))
+  );
+
+  // Use hourly granularity if data spans 2 or fewer days, OR if all data is on a single day
   const daysDiff = Math.ceil(
     (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
   );
-  const granularity = daysDiff <= 2 ? "hour" : "day";
+  const useHourlyGranularity = daysDiff <= 2 || uniqueDays.size === 1;
 
   // Aggregate by period
   const periodMap = new Map<string, TimelineDataPoint>();
 
-  data?.forEach((event) => {
+  data.forEach((event) => {
     const date = new Date(event.created_at);
     let periodKey: string;
 
-    if (granularity === "hour") {
+    if (useHourlyGranularity) {
       periodKey = `${date.toISOString().slice(0, 13)}:00:00.000Z`;
     } else {
       periodKey = `${date.toISOString().slice(0, 10)}T00:00:00.000Z`;

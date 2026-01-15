@@ -47,50 +47,10 @@ export default function ClicksChart({ data }: ClicksChartProps) {
     return date.toLocaleDateString([], { month: "short", day: "numeric" });
   };
 
-  // For single data point, show a summary card instead of a bar chart
-  if (data.length === 1) {
-    const point = data[0];
-    return (
-      <div className="space-y-4">
-        <div className="rounded-lg bg-zinc-100 p-6 dark:bg-zinc-800">
-          <p className="mb-2 text-sm text-zinc-500">{formatDate(point.period)}</p>
-          <div className="flex items-end gap-4">
-            <div className="flex items-center gap-2">
-              <div className="h-16 w-8 rounded bg-blue-500" />
-              <div>
-                <p className="text-2xl font-bold text-blue-600">{point.simplify_clicks}</p>
-                <p className="text-sm text-zinc-500">Simplify</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-16 w-8 rounded bg-green-500" />
-              <div>
-                <p className="text-2xl font-bold text-green-600">{point.summarize_clicks}</p>
-                <p className="text-sm text-zinc-500">Summarize</p>
-              </div>
-            </div>
-            {point.errors > 0 && (
-              <div className="ml-4 text-red-500">
-                <p className="text-lg font-bold">{point.errors}</p>
-                <p className="text-sm">Errors</p>
-              </div>
-            )}
-          </div>
-          <p className="mt-4 text-sm text-zinc-500">
-            Total: <span className="font-medium text-zinc-700 dark:text-zinc-300">{point.total_clicks} clicks</span>
-          </p>
-        </div>
-        <p className="text-center text-sm text-zinc-400">
-          Chart will show trends when more days have data
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div>
       {/* Chart */}
-      <div className="flex items-end gap-1" style={{ height: chartHeight }}>
+      <div className="flex items-end justify-center gap-1" style={{ height: chartHeight }}>
         {data.map((point, i) => {
           const barHeight = (point.total_clicks / maxClicks) * chartHeight;
           const simplifyHeight = point.total_clicks > 0
@@ -104,6 +64,7 @@ export default function ClicksChart({ data }: ClicksChartProps) {
             <div
               key={i}
               className="group relative flex flex-1 flex-col items-center justify-end"
+              style={{ minWidth: 8, maxWidth: data.length === 1 ? 80 : undefined }}
             >
               {/* Tooltip */}
               <div className="pointer-events-none absolute bottom-full mb-2 z-10 hidden rounded bg-zinc-800 px-2 py-1 text-xs text-white group-hover:block">
