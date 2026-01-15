@@ -16,7 +16,6 @@ import PeakHoursChart from "@/components/analytics/PeakHoursChart";
 import ReturnVisitorStats from "@/components/analytics/ReturnVisitorStats";
 import BothFeaturesUsage from "@/components/analytics/BothFeaturesUsage";
 import ScrollDepthStats from "@/components/analytics/ScrollDepthStats";
-import ScreenReaderStats from "@/components/analytics/ScreenReaderStats";
 
 interface AnalyticsClientProps {
   customerId: string;
@@ -81,11 +80,6 @@ interface AnalyticsData {
     fullyRead: number;
     partialRead: number;
     noScroll: number;
-  };
-  screenReaderUsage: {
-    detected: number;
-    notDetected: number;
-    detectionRate: number;
   };
   dateRange: { start: string; end: string };
 }
@@ -273,13 +267,6 @@ export default function AnalyticsClient({ customerId }: AnalyticsClientProps) {
                 <BothFeaturesUsage data={analyticsData.bothFeaturesUsage} />
               </div>
 
-              {/* Screen Reader / Accessibility */}
-              <div className="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900 lg:col-span-2">
-                <h3 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-white">
-                  Accessibility Usage
-                </h3>
-                <ScreenReaderStats data={analyticsData.screenReaderUsage} />
-              </div>
             </div>
           </>
         ) : (

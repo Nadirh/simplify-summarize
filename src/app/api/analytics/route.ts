@@ -14,7 +14,6 @@ import {
   getReturnVisitorStats,
   getBothFeaturesUsage,
   getScrollDepthStats,
-  getScreenReaderUsage,
 } from "@/lib/db/analytics";
 import {
   getPagesWithoutContent,
@@ -57,7 +56,6 @@ export async function GET(request: NextRequest) {
       returnVisitorStats,
       bothFeaturesUsage,
       scrollDepthStats,
-      screenReaderUsage,
     ] = await Promise.all([
       getOverviewStats(customer.id, startDate, endDate),
       getTimelineData(customer.id, startDate, endDate),
@@ -73,7 +71,6 @@ export async function GET(request: NextRequest) {
       getReturnVisitorStats(customer.id, startDate, endDate),
       getBothFeaturesUsage(customer.id, startDate, endDate),
       getScrollDepthStats(customer.id, startDate, endDate),
-      getScreenReaderUsage(customer.id, startDate, endDate),
     ]);
 
     return NextResponse.json({
@@ -93,7 +90,6 @@ export async function GET(request: NextRequest) {
       returnVisitorStats,
       bothFeaturesUsage,
       scrollDepthStats,
-      screenReaderUsage,
       dateRange: { start: startDate.toISOString(), end: endDate.toISOString() },
     });
   } catch (error) {
