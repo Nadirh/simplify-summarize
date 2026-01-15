@@ -21,6 +21,16 @@ export default function ClicksChart({ data }: ClicksChartProps) {
     );
   }
 
+  // Check if all data points have zero clicks
+  const totalClicks = data.reduce((sum, d) => sum + d.total_clicks, 0);
+  if (totalClicks === 0) {
+    return (
+      <div className="flex h-64 items-center justify-center text-zinc-500">
+        No clicks recorded for this period
+      </div>
+    );
+  }
+
   const maxClicks = Math.max(...data.map((d) => d.total_clicks), 1);
 
   const formatDate = (period: string) => {
@@ -50,6 +60,7 @@ export default function ClicksChart({ data }: ClicksChartProps) {
             <div
               key={i}
               className="group relative flex flex-1 flex-col items-center justify-end"
+              style={{ minWidth: data.length === 1 ? '60px' : undefined, maxWidth: data.length === 1 ? '120px' : undefined }}
             >
               {/* Tooltip */}
               <div className="pointer-events-none absolute bottom-full mb-2 hidden rounded bg-zinc-800 px-2 py-1 text-xs text-white group-hover:block">
@@ -62,19 +73,23 @@ export default function ClicksChart({ data }: ClicksChartProps) {
 
               {/* Stacked bar */}
               <div
-                className="w-full rounded-t"
-                style={{ height: `${height}%` }}
+                className="flex w-full flex-col justify-end rounded-t"
+                style={{ height: `${height}%`, minHeight: point.total_clicks > 0 ? '8px' : '0' }}
               >
                 {/* Summarize portion (top) */}
-                <div
-                  className="w-full rounded-t bg-green-500"
-                  style={{ height: `${(summarizeHeight / (height || 1)) * 100}%` }}
-                />
+                {point.summarize_clicks > 0 && (
+                  <div
+                    className="w-full rounded-t bg-green-500"
+                    style={{ height: `${(point.summarize_clicks / point.total_clicks) * 100}%` }}
+                  />
+                )}
                 {/* Simplify portion (bottom) */}
-                <div
-                  className="w-full bg-blue-500"
-                  style={{ height: `${(simplifyHeight / (height || 1)) * 100}%` }}
-                />
+                {point.simplify_clicks > 0 && (
+                  <div
+                    className={`w-full bg-blue-500 ${point.summarize_clicks === 0 ? 'rounded-t' : ''}`}
+                    style={{ height: `${(point.simplify_clicks / point.total_clicks) * 100}%` }}
+                  />
+                )}
               </div>
             </div>
           );
